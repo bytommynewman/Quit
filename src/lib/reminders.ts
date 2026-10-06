@@ -23,6 +23,7 @@ Notifications.setNotificationHandler({
 });
 
 export async function ensurePermission(): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
   if (!Device.isDevice) return false;
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
@@ -43,6 +44,7 @@ export const DEFAULT_REMINDERS: ReminderPrefs = { evening: true, morning: true, 
 
 // Re-schedules everything from scratch so it matches the prefs exactly.
 export async function applyReminders(prefs: ReminderPrefs): Promise<boolean> {
+  if (Platform.OS === 'web') return false;
   await Notifications.cancelAllScheduledNotificationsAsync();
   if (!prefs.evening && !prefs.morning) return true;
   const ok = await ensurePermission();

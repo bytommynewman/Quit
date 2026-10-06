@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as q from '../db/quit';
+import * as q from '../api/quit';
 import type { CopingTool, IfThenPlan, QuitAttempt, QuitMilestone, SupportContact } from '../../types';
 
 export const KEYS = {

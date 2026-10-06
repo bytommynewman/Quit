@@ -1,6 +1,5 @@
-// Row types for the local SQLite database (see lib/db/schema.ts). Booleans
-// are stored as 0/1 and arrays/objects as JSON text; lib/db/* maps both ways
-// so everything above the db layer sees these shapes.
+// Row types for the Supabase (Postgres) tables; see supabase/schema.sql. user_id is
+// omitted: it defaults server-side and RLS scopes every query to the signed-in user.
 
 export type QuitMethod = 'cold_turkey' | 'taper';
 export type QuitStatus = 'active' | 'completed' | 'abandoned';

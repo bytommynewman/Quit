@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, Switch, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { format, parseISO } from 'date-fns';
 import { Screen } from '../components/ui/Screen';
@@ -8,6 +8,8 @@ import { Button } from '../components/ui/Button';
 import { TextField } from '../components/ui/TextField';
 import { SectionLabel } from '../components/quit/SectionLabel';
 import { useTheme } from '../lib/theme';
+import { useAuth } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 import {
   useActiveAttempt,
   useResetAllData,
@@ -47,6 +49,7 @@ function ToggleRow({
 
 export default function SettingsScreen() {
   const { colors, spacing, typography } = useTheme();
+  const { session } = useAuth();
   const { data: attempt } = useActiveAttempt();
   const { data: rawPrefs } = useSetting('reminders');
   const setSetting = useSetSetting();
@@ -65,6 +68,7 @@ export default function SettingsScreen() {
   async function changePrefs(patch: Partial<ReminderPrefs>) {
     const next = { ...prefs, ...patch };
     await setSetting.mutateAsync({ key: 'reminders', value: JSON.stringify(next) });
+    if (Platform.OS === 'web') return;
     try {
       const ok = await applyReminders(next);
       setNotifOff(!ok);
@@ -91,10 +95,12 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             await resetAll.mutateAsync();
-            try {
-              await applyReminders({ ...prefs, evening: false, morning: false });
-            } catch {
-              // nothing scheduled to clear
+            if (Platform.OS !== 'web') {
+              try {
+                await applyReminders({ ...prefs, evening: false, morning: false });
+              } catch {
+                // nothing scheduled to clear
+              }
             }
             router.replace('/');
           },
@@ -105,8 +111,20 @@ export default function SettingsScreen() {
 
   return (
     <Screen scroll>
+      <SectionLabel>Account</SectionLabel>
+      <Card style={{ gap: spacing.sm }}>
+        <Text style={[typography.body, { color: colors.text }]}>{session?.user.email}</Text>
+        <Button label="Sign out" variant="secondary" onPress={() => supabase.auth.signOut()} />
+      </Card>
+
       <SectionLabel>Reminders</SectionLabel>
       <Card style={{ paddingVertical: spacing.xs }}>
+        {Platform.OS === 'web' ? (
+          <Text style={[typography.caption, { color: colors.textMuted, paddingVertical: spacing.sm }]}>
+            Reminders are phone-only.
+          </Text>
+        ) : (
+          <>
         <ToggleRow
           label="Evening check-in"
           sub="9 pm. The risk window, and the quickest time to check in."
@@ -127,6 +145,8 @@ export default function SettingsScreen() {
         <Text style={[typography.caption, { color: colors.textFaint, paddingBottom: spacing.sm }]}>
           In Expo Go on iOS, local notifications may not show. Use a development build.
         </Text>
+          </>
+        )}
       </Card>
 
       <SectionLabel>Quit</SectionLabel>
@@ -181,7 +201,7 @@ export default function SettingsScreen() {
       <SectionLabel>Danger zone</SectionLabel>
       <Card style={{ gap: spacing.sm }}>
         <Text style={[typography.caption, { color: colors.textMuted }]}>
-          Wipes everything on this phone and starts from nothing.
+          Wipes all your quit data from your account and starts from nothing.
         </Text>
         <Pressable
           onPress={confirmReset}
@@ -203,7 +223,7 @@ export default function SettingsScreen() {
       <SectionLabel>About</SectionLabel>
       <Card>
         <Text style={[typography.caption, { color: colors.textMuted }]}>
-          Everything stays on this phone. Nothing is sent anywhere. This is a tracker, not medical advice. If you are
+          Your data is stored in your own private Supabase project, visible only to your account. This is a tracker, not medical advice. If you are
           thinking about hurting yourself, or panic will not settle, call: 988, Reach Out 519-433-2023, or
           ConnexOntario 1-866-531-2600.
         </Text>
