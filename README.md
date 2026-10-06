@@ -1,9 +1,10 @@
 # Quit
 
-Off weed. A private, local-first quit tracker for one person.
+Off weed. A private quit tracker for one person, on every device he owns.
 
-Everything lives in a SQLite database on the phone. No account, no server, no
-email, no social anything. Nothing leaves the device unless you export it.
+One account, one set of data, synced through a private Supabase project you
+control. Phone, laptop and Mac mini all show the same day count. No email is
+ever sent (the email is only a username), no social anything, no AI.
 
 ## What it does
 
@@ -26,16 +27,39 @@ email, no social anything. Nothing leaves the device unless you export it.
 The plan itself is in [`docs/PLAN.md`](docs/PLAN.md). The research behind every
 number is in [`docs/RESEARCH.md`](docs/RESEARCH.md).
 
+## One-time setup (about 5 minutes, once)
+
+1. **Create the Supabase project.** https://supabase.com/dashboard → **New
+   project**. Name it `quit`, pick a strong database password (save it in your
+   password manager; you will rarely need it), region Canada (Central) or US
+   East. Wait for it to finish provisioning.
+2. **Create the tables.** Left sidebar → **SQL Editor** → **+ New query**.
+   Paste the whole of [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
+   You should see "Success. No rows returned."
+3. **Turn off confirmation emails.** Left sidebar → **Authentication** →
+   **Sign In / Providers** → **Email** → switch **Confirm email** off → Save.
+   (Otherwise sign-up sends you a verification email. This app never emails
+   you.)
+4. **Get the two keys.** Left sidebar → **Project Settings** (gear) → **API**
+   (or the green **Connect** button at the top → **App Frameworks**). Copy
+   **Project URL** and the **anon / public** key.
+5. **Tell the app.** In this folder, copy `.env.example` to `.env` and paste
+   the two values in. Do this on every machine you run it from (or commit
+   `.env` to this private repo — the anon key is public by design).
+
+Then on first launch tap **Create account**, pick an email and password, and
+you are in. Use the same login on every device.
+
 ## Run it
 
 ```
 npm install
-npx expo start
+npx expo start          # phone: scan the QR with Expo Go
+npx expo start --web    # laptop / Mac mini: opens in the browser
 ```
 
-Scan the QR code with Expo Go, or build a development client
-(`npx expo run:ios`) — local notifications are more reliable in a dev build
-than in Expo Go.
+Reminders are phone-only. They are more reliable in a development build
+(`npx expo run:ios`) than in Expo Go.
 
 ```
 npm test          # vitest, pure logic only
@@ -48,8 +72,11 @@ npm run typecheck # tsc --noEmit (strict)
 src/app/            Expo Router screens: index (home), setup, craving, checkin, slip, settings
 src/components/     ui primitives + quit widgets (Chip, ScaleRow, Stepper, TrendBars)
 src/constants/      quit.ts (scale items, phases, seed toolkit, crisis lines), theme.ts
-src/lib/db/         SQLite schema + data access (expo-sqlite)
-src/lib/hooks/      TanStack Query hooks over the db layer
+src/lib/api/        Supabase data access (one function per operation)
+src/lib/hooks/      TanStack Query hooks over the api layer
+src/lib/supabase.ts Supabase client (session in iOS Keychain; localStorage on web)
+src/lib/auth.tsx    session context
+supabase/schema.sql the database: tables, row-level security, triggers
 src/lib/quitLogic.ts  pure derived values, unit tested
 src/lib/reminders.ts  local notifications
 docs/               PLAN.md, RESEARCH.md
